@@ -1,768 +1,644 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Next-Gen Hyper HD Racing Engine</title>
-    <style>
-        * {
-            box-sizing: border-box;
-            -webkit-user-select: none;
-            user-select: none;
-            margin: 0;
-            padding: 0;
-        }
-        body, html {
-            width: 100%;
-            height: 100%;
-            background: #000;
-            overflow: hidden;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", Helvetica, sans-serif;
-        }
-        #gameCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        
-        /* Next-Gen Holographic HUD Dashboard */
-        #hud {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            color: #ffffff;
-            z-index: 10;
-            background: rgba(10, 15, 30, 0.75);
-            padding: 24px 35px;
-            border-radius: 20px;
-            border: 1px solid rgba(0, 229, 255, 0.25);
-            backdrop-filter: blur(20px);
-            box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 0 15px rgba(0,229,255,0.1);
-        }
-        .hud-item { margin-bottom: 12px; }
-        .hud-label {
-            font-size: 10px;
-            color: #00e5ff;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-        }
-        .hud-val {
-            font-family: monospace;
-            color: #ffffff;
-            font-size: 32px;
-            font-weight: 900;
-            text-shadow: 0 0 10px rgba(255,255,255,0.3);
-        }
-        #hp-container {
-            width: 160px; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; margin-top: 6px;
-        }
-        #hp-bar {
-            width: 100%; height: 100%; background: linear-gradient(90deg, #00ff66, #00ffcc); transition: width 0.1s ease;
-        }
-
-        /* Top Bar System Switches */
-        .system-menu {
-            position: absolute;
-            top: 30px;
-            right: 30px;
-            z-index: 10;
-            display: flex;
-            gap: 15px;
-        }
-        .sys-btn {
-            background: rgba(255, 255, 255, 0.9);
-            color: #111;
-            padding: 14px 24px;
-            border-radius: 14px;
-            font-weight: 800;
-            font-size: 13px;
-            border: 1px solid rgba(0,0,0,0.1);
-            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-            letter-spacing: 0.5px;
-        }
-        .sys-btn:active { transform: scale(0.95); }
-        #weather-btn { background: #111; color: #00e5ff; border: 1px solid #00e5ff; }
-
-        /* Impact Screen Flash Effect Overlay */
-        #damage-flash {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(255,0,85,0) 30%, rgba(255,0,85,0.6) 100%);
-            pointer-events: none; z-index: 5; opacity: 0; transition: opacity 0.05s linear;
-        }
-
-        /* AAA Game Cinematic Game Over Stage overlay */
-        #gameover-screen {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(15,20,35,0.95) 0%, rgba(5,5,10,0.99) 100%);
-            z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: #fff; backdrop-filter: blur(15px);
-        }
-        #gameover-screen h1 {
-            font-size: 72px; font-weight: 900; color: #ff0055; letter-spacing: 6px; text-shadow: 0 0 30px rgba(255,0,85,0.6); margin-bottom: 5px;
-        }
-        #gameover-screen p { font-size: 20px; color: #8892b0; margin-bottom: 35px; letter-spacing: 1px; }
-        #restart-btn {
-            background: linear-gradient(135deg, #00ffcc, #0077ff); color: #fff; padding: 18px 50px; font-size: 18px; font-weight: 800;
-            border: none; border-radius: 35px; box-shadow: 0 15px 35px rgba(0,119,255,0.4); letter-spacing: 1px;
-        }
-        #restart-btn:active { transform: scale(0.95); }
-
-        /* Mobile Controller Layout Overlay Matrix */
-        .touch-container {
-            position: absolute;
-            bottom: 45px;
-            left: 0; width: 100%; padding: 0 60px;
-            display: flex; justify-content: space-between; align-items: center; z-index: 10; pointer-events: none;
-        }
-        .btn-side { display: flex; gap: 24px; pointer-events: auto; align-items: center; }
-        
-        #button-controls { display: flex; gap: 24px; }
-        .touch-btn {
-            width: 100px; height: 100px; background: rgba(255, 255, 255, 0.9);
-            border-radius: 50%; color: #111116; font-size: 34px;
-            display: flex; justify-content: center; align-items: center;
-            backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,0.25);
-        }
-        .touch-btn:active { background: #cccccc; transform: scale(0.88); }
-        
-        .btn-gas { background: #00ff66; color: #fff; font-weight: 900; font-size: 20px; border: none; box-shadow: 0 10px 25px rgba(0,255,102,0.3); }
-        .btn-gas:active { background: #00cc52; }
-        .btn-brk { background: #ff0055; color: #fff; font-weight: 900; font-size: 20px; border: none; box-shadow: 0 10px 25px rgba(255,0,85,0.3); }
-        .btn-brk:active { background: #cc0044; }
-        
-        .btn-nos {
-            background: linear-gradient(135deg, #00f0ff, #0044ff); color: #fff; font-weight: 900; font-size: 19px; border: none;
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
-        }
-        .btn-nos:active { background: #0022aa; box-shadow: 0 0 35px #00f0ff; }
-
-        /* Supercar Dynamic Steering Wheel */
-        #steering-wheel {
-            width: 180px; height: 180px; border-radius: 50%;
-            background: radial-gradient(circle, #252830 20%, #121318 50%, #2a2d36 62%, #050508 100%);
-            border: 10px dashed #495057; box-shadow: 0 15px 40px rgba(0,0,0,0.5), inset 0 0 25px #000;
-            display: none; pointer-events: auto; position: relative; transform: rotate(0deg); transition: transform 0.03s linear;
-        }
-        #steering-wheel::before {
-            content: ''; position: absolute; top: 50%; left: 0; right: 0; height: 14px; background: #343a40; transform: translateY(-50%);
-        }
-        #steering-wheel::after {
-            content: '▼'; position: absolute; top: 8px; left: 50%; transform: translateX(-50%); color: #00e5ff; font-size: 14px;
-        }
-    </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#060a14">
+<title>回声 ECHO</title>
+<style>
+:root{--c:#7ee8fa}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+html,body{margin:0;height:100%;background:#060a14;color:#e8f0ff;font-family:system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;overflow:hidden}
+canvas#cv{position:fixed;inset:0;touch-action:none}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;gap:12px;padding:22px;background:rgba(6,10,20,.82);backdrop-filter:blur(6px);overflow:auto;text-align:center;z-index:5}
+.screen>:first-child{margin-top:auto}.screen>:last-child{margin-bottom:auto}
+.hidden{display:none!important}
+h1{margin:0;font-size:46px;letter-spacing:6px;font-weight:300}
+h1 span{display:block;font-size:13px;letter-spacing:10px;color:var(--c);margin-top:4px}
+h2{margin:0;font-weight:400}
+.sub{opacity:.6;margin:0 0 6px}
+.small{font-size:12px;opacity:.65;line-height:1.6}
+.btn{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#fff;padding:14px 22px;border-radius:14px;font-size:16px;min-width:240px;cursor:pointer;transition:.15s}
+.btn small{display:block;font-size:11px;opacity:.6;margin-top:3px}
+.btn:hover,.btn:active{background:rgba(255,255,255,.15)}
+.btn.primary{border-color:var(--c);box-shadow:0 0 22px -6px var(--c)}
+.link{background:none;border:none;color:#fff;opacity:.6;font-size:13px;padding:8px 10px;cursor:pointer}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.seg{display:flex;border:1px solid rgba(255,255,255,.18);border-radius:12px;overflow:hidden}
+.seg button{background:none;border:none;color:#fff;opacity:.55;padding:9px 18px;font-size:14px;cursor:pointer}
+.seg button.on{background:rgba(255,255,255,.14);opacity:1}
+.chips{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:340px}
+.chip{width:34px;height:34px;border-radius:50%;border:2px solid transparent;cursor:pointer;position:relative}
+.chip.on{border-color:#fff}.chip.lock{opacity:.25;cursor:default}
+.bar{width:240px;height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--c);width:0;transition:width .8s}
+.cards{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+.card{width:150px;padding:16px 12px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.2);border-radius:16px;color:#fff;cursor:pointer;display:flex;flex-direction:column;gap:8px;align-items:center;transition:.15s}
+.card:hover{transform:translateY(-4px);border-color:var(--c)}
+.card .ic{font-size:34px}.card span{font-size:12px;opacity:.7;line-height:1.5}
+.grade{font-size:84px;font-weight:200;line-height:1;color:var(--c);text-shadow:0 0 30px var(--c)}
+.score{font-size:30px}
+.near{color:#ffd36e;font-size:15px}
+.hook{font-size:13px;opacity:.8}
+.rounds{display:flex;gap:10px;align-items:flex-end;height:60px}
+.rb{width:26px;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;font-size:10px;opacity:.9}
+.rb i{display:block;width:100%;background:var(--c);border-radius:4px 4px 0 0;opacity:.7}
+#art{width:280px;height:280px;border-radius:18px;border:1px solid rgba(255,255,255,.12)}
+#btnPause{position:fixed;top:12px;right:12px;z-index:4;background:rgba(255,255,255,.08);border:none;color:#fff;width:40px;height:40px;border-radius:50%;font-size:16px;cursor:pointer}
+#toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.14);padding:10px 18px;border-radius:20px;font-size:14px;opacity:0;pointer-events:none;transition:.3s;z-index:9}
+#toast.on{opacity:1}
+.how{max-width:360px;text-align:left;line-height:1.8;font-size:15px}
+.how li{margin-bottom:6px}
+</style>
 </head>
 <body>
+<canvas id="cv"></canvas>
+<button id="btnPause" class="hidden">⏸</button>
 
-    <div id="damage-flash"></div>
+<div id="menu" class="screen">
+  <h1>回声<span>ECHO</span></h1>
+  <p class="sub">你在和过去的自己合作</p>
+  <div id="streakLine" class="small"></div>
+  <button class="btn primary" id="btnDaily"></button>
+  <button class="btn" id="btnFree">自由模式</button>
+  <div class="seg" id="modeSeg"><button data-mode="chill">🌙 放松</button><button data-mode="focus">⚡ 挑战</button></div>
+  <div class="chips" id="themes"></div>
+  <div class="bar"><i id="dustBar"></i></div>
+  <div class="small" id="dustText"></div>
+  <div class="row"><button class="link" id="btnHow">怎么玩</button><button class="link" id="btnSnd"></button><button class="link" id="btnVib"></button></div>
+</div>
 
-    <div id="gameover-screen">
-        <h1>WASTED</h1>
-        <p>Your hypercar was completely totaled at extreme velocity!</p>
-        <p style="font-size: 32px; font-weight: 900;">FINAL SCORE: <span id="final-score" style="color:#00ffcc;">0</span></p>
-        <button id="restart-btn">RESPAWN & RACE</button>
-    </div>
+<div id="how" class="screen hidden" style="z-index:8;background:#060a14">
+  <h2>怎么玩</h2>
+  <ol class="how">
+    <li>在 7×7 光格里滑动手指（或方向键 / WASD）移动光点，吃光粒得分。</li>
+    <li>每回合 30 秒，共 5 回合。<b>第一次移动才开始计时</b>，不用着急。</li>
+    <li>回合结束后，你的路线变成<b>回声</b>，之后每回合自动重走，帮你吃光粒。</li>
+    <li>淡淡的线是回声接下来的路线。<b>别和它撞上</b>：撞上会打断连击（挑战模式还会扣分）。</li>
+    <li>连续吃光粒累计连击，倍率最高 ×3。金色 30 分，棱镜 100 分。</li>
+    <li>第 1、3 回合后，三选一一个遗物。</li>
+    <li>多规划：让新路线去回声没覆盖的地方。</li>
+  </ol>
+  <button class="btn primary" id="btnHowClose">明白了</button>
+</div>
 
-    <div id="hud">
-        <div class="hud-item">
-            <div class="hud-label">Velocity</div>
-            <div><span id="speed-val" class="hud-val">0</span> <span style="font-size:14px; color:#8892b0;">KM/H</span></div>
-        </div>
-        <div class="hud-item">
-            <div class="hud-label">Structural Shield</div>
-            <div id="hp-container"><div id="hp-bar"></div></div>
-        </div>
-        <div class="hud-item" style="margin-bottom:0;">
-            <div class="hud-label">Distance Tracker</div>
-            <div><span id="score-val" class="hud-val" style="color:#00ffcc;">0</span></div>
-        </div>
-    </div>
+<div id="relic" class="screen hidden">
+  <h2>选择一个遗物</h2>
+  <div class="cards" id="cards"></div>
+  <div class="small" id="relicHave"></div>
+</div>
 
-    <div class="system-menu">
-        <button class="sys-btn" id="weather-btn">TIME: DAYTIME</button>
-        <button class="sys-btn" id="mode-switcher">DRIVE STYLE</button>
-    </div>
+<div id="pause" class="screen hidden" style="z-index:7">
+  <h2>已暂停</h2>
+  <button class="btn primary" id="btnResume">继续</button>
+  <button class="btn" id="btnQuit">回到主页</button>
+</div>
 
-    <div id="gameCanvas"></div>
-
-    <div class="touch-container">
-        <div class="btn-side">
-            <div id="button-controls">
-                <div class="touch-btn" id="key-left">◀</div>
-                <div class="touch-btn" id="key-right">▶</div>
-            </div>
-            <div id="steering-wheel"></div>
-        </div>
-
-        <div class="btn-side">
-            <div class="touch-btn btn-brk" id="key-down">B</div>
-            <div class="touch-btn btn-nos" id="key-nos">NOS</div>
-            <div class="touch-btn btn-gas" id="key-up">GAS</div>
-        </div>
-    </div>
+<div id="result" class="screen hidden">
+  <div class="grade" id="rGrade"></div>
+  <div class="score" id="rScore"></div>
+  <div class="near" id="rNear"></div>
+  <canvas id="art"></canvas>
+  <div class="rounds" id="rRounds"></div>
+  <div class="small" id="rStats"></div>
+  <div class="hook" id="rHook"></div>
+  <div class="row"><button class="btn primary" id="btnAgain" style="min-width:150px">再来一局</button><button class="btn" id="btnShare" style="min-width:110px">分享</button></div>
+  <div class="row"><button class="link" id="btnSaveArt">保存图案</button><button class="link" id="btnHome">回主页</button></div>
+</div>
+<div id="toast"></div>
 
 <script>
-// UI Object Hooks
-const speedVal = document.getElementById('speed-val');
-const scoreVal = document.getElementById('score-val');
-const hpBar = document.getElementById('hp-bar');
-const modeSwitcher = document.getElementById('mode-switcher');
-const weatherBtn = document.getElementById('weather-btn');
-const buttonControls = document.getElementById('button-controls');
-const steeringWheel = document.getElementById('steering-wheel');
-const damageFlash = document.getElementById('damage-flash');
-const gameoverScreen = document.getElementById('gameover-screen');
-const finalScore = document.getElementById('final-score');
-const restartBtn = document.getElementById('restart-btn');
+(()=>{
+'use strict';
+/* ================= 配置（所有数值在这里调） ================= */
+const CFG={
+  GRID:7, ROUNDS:5, ROUND_SEC:30, MOVE_MS:140, SPAWN_MS:700,
+  ORB_LIFE:{chill:9000,focus:6500},
+  COMBO_WINDOW:1700, MULT_STEP:5, MULT_CAP:3,
+  ECHO_VALUE:0.7, CLASH_PENALTY:20, CLASH_IMMUNE_MS:1200, CLASH_CD:1000,
+  P_GOLD:0.14, P_PRISM:0.04, PRISM_PITY:30,
+  VALUES:{normal:10,gold:30,prism:100},
+  GRADES:[['S',9000],['A',6500],['B',4500],['C',2500],['D',0]],   // 初始猜测，需用真人数据校准
+  STARTS:[[3,3],[1,1],[5,5],[5,1],[1,5]],
+  RELIC_AFTER:[1,3]
+};
+const RELICS=[
+ {id:'wide',icon:'🌊',name:'宽阔回声',desc:'回声会顺手吃掉身边上下左右的光粒',fx:m=>{m.echoReach=1}},
+ {id:'gold',icon:'✨',name:'金色偏爱',desc:'金色光粒出现概率大幅提高',fx:m=>{m.goldBonus+=.12}},
+ {id:'shield',icon:'🛡️',name:'温柔触碰',desc:'每回合第一次与回声相撞不受惩罚',fx:m=>{m.shield+=1}},
+ {id:'time',icon:'⏳',name:'延长时光',desc:'之后每回合 +5 秒',fx:m=>{m.extraSec+=5}},
+ {id:'window',icon:'🎐',name:'悠长余韵',desc:'连击保持时间 +1.2 秒',fx:m=>{m.comboWindow+=1200}},
+ {id:'amp',icon:'🔔',name:'回声增幅',desc:'回声得分从 70% 提升到 100%',fx:m=>{m.echoValue+=.3}},
+ {id:'harvest',icon:'🌾',name:'丰饶',desc:'光粒出现速度 +30%',fx:m=>{m.spawnMul*=1.3}},
+ {id:'warm',icon:'🔥',name:'热身',desc:'每回合开局自带 8 连击',fx:m=>{m.startCombo+=8}},
+ {id:'surge',icon:'💫',name:'星爆',desc:'每次吃光粒有 5% 概率引爆全场光粒',fx:m=>{m.surge+=.05}},
+ {id:'magnet',icon:'🧲',name:'磁吸',desc:'你也能吃到身边上下左右的光粒',fx:m=>{m.magnet=1}}
+];
+const THEMES=[
+ {name:'深海',at:0,player:'#7ee8fa',echo:['#ff7eb6','#ffd36e','#9b8cff','#6effb0']},
+ {name:'余烬',at:600,player:'#ffb56b',echo:['#ff6b6b','#ffd93d','#ff9ff3','#fff1a8']},
+ {name:'森语',at:1500,player:'#a8ff78',echo:['#78ffd6','#f6ff8f','#8fd3ff','#ffb88f']},
+ {name:'星云',at:2800,player:'#c8a8ff',echo:['#ff9de6','#8ab4ff','#ffe29a','#9dffe0']},
+ {name:'雪夜',at:4500,player:'#ffffff',echo:['#9ad7ff','#c3b6ff','#b8ffe6','#ffd1e8']},
+ {name:'霓虹',at:7000,player:'#00f5d4',echo:['#f15bb5','#fee440','#9b5de5','#00bbf9']}
+];
+const G=CFG.GRID;
+const $=id=>document.getElementById(id);
 
-// Graphics Engine variables
-let scene, camera, renderer, globalLight, sunMesh;
-let playerCar, road;
-let enemies = [];
-let environmentObjects = [];
-let nitroParticles = [];
+/* ================= 存档 ================= */
+const SAVE_KEY='echo_save_v1';
+const defSave={stardust:120,theme:0,streak:0,lastDay:null,freezes:1,best:0,daily:null,runs:0,sound:true,haptic:true,mode:'chill',seen:false};
+let save=(()=>{try{return Object.assign({},defSave,JSON.parse(localStorage.getItem(SAVE_KEY)||'{}'))}catch(e){return {...defSave}}})();
+const persist=()=>{try{localStorage.setItem(SAVE_KEY,JSON.stringify(save))}catch(e){}};
+const todayStr=()=>{const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const dayNum=s=>{const [y,m,d]=s.split('-').map(Number);return Math.round(Date.UTC(y,m-1,d)/864e5)};
+const dailySeed=()=>Number(todayStr().replace(/-/g,''));
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 
-// Realistic Multi-Tier Physics Engine Parameters
-let speed = 0;
-let maxSpeed = 2.5; 
-const baseMaxSpeed = 2.5;
-const nitroMaxSpeed = 3.8; // Extreme 460 KM/H calculation vector
-const accel = 0.035;
-const brk = -0.09;
-const decel = -0.01;
+/* ================= 状态 ================= */
+const S={phase:'menu',paused:false,mode:'chill',clock:0,bgGlow:0,score:0,dispScore:0,round:0,relics:[],mods:null,echoes:[],paths:[],roundScores:[],stats:null,pity:0,seed:1,daily:false,official:false,bannerT:0};
+let R=null;
+function calcMods(){
+  const m={echoReach:0,goldBonus:0,shield:0,extraSec:0,comboWindow:CFG.COMBO_WINDOW,echoValue:CFG.ECHO_VALUE,spawnMul:1,startCombo:0,surge:0,magnet:0};
+  S.relics.forEach(id=>RELICS.find(r=>r.id===id).fx(m));
+  return m;
+}
+S.mods=calcMods();
+const th=()=>THEMES[save.theme];
+const echoCol=i=>th().echo[i%4];
+const multOf=c=>Math.min(CFG.MULT_CAP,1+Math.floor(c/CFG.MULT_STEP)*.5);
+function setPhase(p){S.phase=p;$('btnPause').classList.toggle('hidden',!(p==='ready'||p==='play'))}
+function vib(p){if(save.haptic&&navigator.vibrate){try{navigator.vibrate(p)}catch(e){}}}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),1800)}
 
-let keys = { left: false, right: false, up: false, down: false, nos: false };
-let score = 0;
-let hp = 100;
-let isGameOver = false;
+/* ================= 音频（全部程序合成，不需要音频文件） ================= */
+const PENT=[0,2,4,7,9];
+const hz=i=>261.63*Math.pow(2,(PENT[i%5]+12*Math.floor(i/5))/12);
+const Snd={
+  ctx:null,master:null,pan:false,
+  init(){
+    if(this.ctx){this.resume();return}
+    const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
+    const c=this.ctx=new AC();
+    this.master=c.createGain();this.master.gain.value=save.sound?.7:0;
+    const comp=c.createDynamicsCompressor();this.master.connect(comp);comp.connect(c.destination);
+    const dly=c.createDelay(1);dly.delayTime.value=.31;
+    const fb=c.createGain();fb.gain.value=.38;
+    const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=2200;
+    const wet=c.createGain();wet.gain.value=.4;
+    this.master.connect(dly);dly.connect(lp);lp.connect(fb);fb.connect(dly);lp.connect(wet);wet.connect(comp);
+    this.pan=!!c.createStereoPanner;
+    // 环境低音
+    const dg=c.createGain();dg.gain.value=.05;dg.connect(this.master);
+    [65.41,98,130.81].forEach(f=>{const o=c.createOscillator();o.type='sine';o.frequency.value=f;o.connect(dg);o.start()});
+    const lfo=c.createOscillator(),lg=c.createGain();lfo.frequency.value=.07;lg.gain.value=.025;lfo.connect(lg);lg.connect(dg.gain);lfo.start();
+  },
+  resume(){if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume()},
+  setOn(v){if(this.master)this.master.gain.setTargetAtTime(v?.7:0,this.ctx.currentTime,.05)},
+  tone(f,o={}){
+    if(!this.ctx||!save.sound)return;
+    const {type='sine',vol=.15,dur=.4,delay=0,slide=0,pan=0}=o;
+    const c=this.ctx,t=c.currentTime+delay;
+    const osc=c.createOscillator(),g=c.createGain();
+    osc.type=type;osc.frequency.setValueAtTime(f,t);
+    if(slide)osc.frequency.exponentialRampToValueAtTime(Math.max(20,f*slide),t+dur);
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(vol,t+.008);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+    osc.connect(g);
+    if(this.pan&&pan){const p=c.createStereoPanner();p.pan.value=pan;g.connect(p);p.connect(this.master)}else g.connect(this.master);
+    osc.start(t);osc.stop(t+dur+.05);
+  },
+  pickup(o){
+    const i=o.x+o.y,pan=(o.x/(G-1))*1.2-.6,f=hz(i);
+    if(o.type==='prism'){for(let k=0;k<6;k++)this.tone(hz(i+k*2),{type:'triangle',vol:.12,dur:.55,delay:k*.06,pan});return}
+    this.tone(f,{vol:.16,dur:.45,pan});this.tone(f*2,{vol:.04,dur:.3,pan});
+    if(o.type==='gold')this.tone(hz(i+3),{type:'triangle',vol:.1,dur:.5,delay:.05,pan});
+  },
+  echoPick(o){this.tone(hz(o.x+o.y),{vol:.07,dur:.55,pan:(o.x/(G-1))*1.2-.6})},
+  combo(){for(let k=0;k<4;k++)this.tone(hz(8+k*2),{type:'triangle',vol:.08,dur:.4,delay:k*.05})},
+  clash(){this.tone(200,{vol:.22,dur:.4,slide:.4});this.tone(90,{type:'triangle',vol:.15,dur:.4})},
+  shield(){this.tone(880,{type:'triangle',vol:.1,dur:.3});this.tone(1320,{type:'triangle',vol:.08,dur:.3,delay:.07})},
+  roundEnd(){[0,2,3,5].forEach((k,j)=>this.tone(hz(k),{vol:.12,dur:1.1,delay:j*.08}))},
+  surge(){for(let k=0;k<9;k++)this.tone(hz(k*2),{type:'triangle',vol:.1,dur:.5,delay:k*.04})},
+  ui(){this.tone(hz(7),{vol:.08,dur:.2})},
+  unlock(){for(let k=0;k<7;k++)this.tone(hz(k*2+3),{type:'triangle',vol:.1,dur:.6,delay:k*.08})}
+};
 
-let controlMode = 'buttons'; 
-let wheelActive = false;
-let wheelStartAngle = 0;
-let wheelCurrentRotation = 0;
+/* ================= 画布与布局 ================= */
+const cv=$('cv'),ctx=cv.getContext('2d');
+let W=0,H=0,DPR=1;const L={cell:0,bx:0,by:0,size:0};
+function resize(){
+  DPR=Math.min(2,window.devicePixelRatio||1);W=innerWidth;H=innerHeight;
+  cv.width=W*DPR;cv.height=H*DPR;cv.style.width=W+'px';cv.style.height=H+'px';
+  const size=Math.min(W*.92,H*.62,620);L.size=size;L.cell=size/G;L.bx=(W-size)/2;L.by=Math.max(104,(H-size)/2+16);
+}
+addEventListener('resize',resize);resize();
+const cx=x=>L.bx+(x+.5)*L.cell, cy=y=>L.by+(y+.5)*L.cell;
+const rgba=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
+function hsl2hex(h,s,l){s/=100;l/=100;const k=n=>(n+h/30)%12,a=s*Math.min(l,1-l),f=n=>l-a*Math.max(-1,Math.min(k(n)-3,Math.min(9-k(n),1)));const x=v=>Math.round(255*v).toString(16).padStart(2,'0');return '#'+x(f(0))+x(f(8))+x(f(4))}
+const orbColor=(type,t)=>type==='gold'?'#ffd36e':type==='prism'?hsl2hex((t/6)%360,90,70):'#cfe8ff';
+function glow(c,x,y,r,hex,a){
+  c.globalCompositeOperation='lighter';
+  const gr=c.createRadialGradient(x,y,0,x,y,r*3);
+  gr.addColorStop(0,rgba(hex,a));gr.addColorStop(.35,rgba(hex,a*.35));gr.addColorStop(1,rgba(hex,0));
+  c.fillStyle=gr;c.beginPath();c.arc(x,y,r*3,0,7);c.fill();
+  c.globalCompositeOperation='source-over';
+  c.fillStyle=rgba(hex,Math.min(1,a));c.beginPath();c.arc(x,y,r,0,7);c.fill();
+}
+function strokePath(c,pts,col,a,w){
+  if(pts.length<2)return;
+  c.beginPath();c.moveTo(pts[0].x,pts[0].y);
+  for(let i=1;i<pts.length-1;i++){const mx=(pts[i].x+pts[i+1].x)/2,my=(pts[i].y+pts[i+1].y)/2;c.quadraticCurveTo(pts[i].x,pts[i].y,mx,my)}
+  c.lineTo(pts[pts.length-1].x,pts[pts.length-1].y);
+  c.strokeStyle=rgba(col,a);c.lineWidth=w;c.lineCap='round';c.lineJoin='round';c.stroke();
+}
+function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+const STARS=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),r:Math.random()*1.6+.4,a:Math.random()*.35+.08,v:Math.random()*1e-5+3e-6}));
 
-// Weather Engine Status Matrix: 'day' | 'night' | 'sunset'
-let weatherMode = 'day'; 
-
-function initEngine() {
-    scene = new THREE.Scene();
-    
-    // Core PBR Shader Engine Setup
-    applyWeatherProfile('day');
-
-    camera = new THREE.PerspectiveCamera(54, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 2.0, 5.8); 
-    camera.lookAt(0, 0.8, -5);
-
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: "high-performance" });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.3;
-    document.getElementById('gameCanvas').appendChild(renderer.domElement);
-
-    // Daylight Ambient
-    const ambientLight = new THREE.AmbientLight('#ffffff', 0.6);
-    scene.add(ambientLight);
-
-    globalLight = new THREE.DirectionalLight('#ffffff', 1.5);
-    globalLight.position.set(30, 90, 10);
-    scene.add(globalLight);
-
-    // Sky Core Object Sun Sphere
-    const sunGeo = new THREE.SphereGeometry(8, 32, 32);
-    const sunMat = new THREE.MeshBasicMaterial({ color: '#fffde7' });
-    sunMesh = new THREE.Mesh(sunGeo, sunMat);
-    sunMesh.position.set(60, 65, -350);
-    scene.add(sunMesh);
-
-    buildAdvancedHighway();
-    buildHypercarMesh();
-    buildTrafficSystem();
-    buildProceduralCityscape();
-
-    setupControlFramework();
-    window.addEventListener('resize', onWindowResize, false);
+/* ================= 游戏流程 ================= */
+function hideAll(){['menu','how','relic','pause','result'].forEach(i=>$(i).classList.add('hidden'))}
+function toMenu(){S.paused=false;hideAll();$('menu').classList.remove('hidden');renderMenu();setPhase('menu')}
+function startRun(daily){
+  Snd.init();Snd.resume();
+  S.daily=daily;S.official=daily&&!(save.daily&&save.daily.date===todayStr());
+  S.mode=save.mode;S.seed=daily?dailySeed():(Math.random()*1e9|0);
+  S.round=0;S.relics=[];S.mods=calcMods();S.echoes=[];S.paths=[];S.roundScores=[];
+  S.score=0;S.dispScore=0;S.pity=0;S.paused=false;
+  S.stats={bestCombo:0,prisms:0,clashes:0,echoScore:0,orbs:0};
+  hideAll();startRound();
+}
+function startRound(){
+  S.round++;
+  const [sx,sy]=CFG.STARTS[S.round-1],m=S.mods;
+  R={t:0,dur:(CFG.ROUND_SEC+m.extraSec)*1000,rng:mulberry32(S.seed*131+S.round*7919),rng2:mulberry32(S.seed*17+S.round*31),
+     nextSpawn:300,orbs:[],px:sx,py:sy,vx:sx,vy:sy,events:[{t:0,x:sx,y:sy}],queue:[],lastMoveT:-1000,
+     combo:m.startCombo,lastPickT:m.startCombo?1500:0,clashCd:0,shield:m.shield,startScore:S.score,
+     trail:[],parts:[],floats:[],shake:0,pulse:0,flash:0};
+  S.echoes.forEach(e=>{e.i=0;e.x=e.events[0].x;e.y=e.events[0].y;e.vx=e.x;e.vy=e.y});
+  for(let i=0;i<4;i++)spawnOrb();
+  setPhase('ready');
+}
+function spawnOrb(){
+  const c=Math.floor(R.rng()*G*G),r=R.rng(),x=c%G,y=(c/G)|0;
+  if(R.orbs.some(o=>o.x===x&&o.y===y))return;
+  let type='normal';S.pity++;
+  if(S.pity>=CFG.PRISM_PITY||r<CFG.P_PRISM){type='prism';S.pity=0}
+  else if(r<CFG.P_PRISM+CFG.P_GOLD+S.mods.goldBonus)type='gold';
+  R.orbs.push({x,y,type,born:R.t,life:CFG.ORB_LIFE[S.mode]});
+}
+function gather(x,y,reach,who){
+  for(let i=R.orbs.length-1;i>=0;i--){
+    const o=R.orbs[i];
+    if(Math.abs(o.x-x)+Math.abs(o.y-y)<=reach){R.orbs.splice(i,1);onPickup(o,who,false)}
+  }
+}
+function onPickup(o,who,noSurge){
+  const m=S.mods,val=CFG.VALUES[o.type],px=cx(o.x),py=cy(o.y),col=orbColor(o.type,S.clock);
+  if(who==='p'){
+    R.combo++;R.lastPickT=R.t;S.stats.orbs++;
+    if(R.combo>S.stats.bestCombo)S.stats.bestCombo=R.combo;
+    const pts=Math.round(val*multOf(R.combo));S.score+=pts;
+    if(o.type==='prism')S.stats.prisms++;
+    burst(px,py,col,o.type==='prism'?28:o.type==='gold'?16:10);
+    floatText(px,py,'+'+pts,col,o.type==='normal'?16:20);
+    Snd.pickup(o);vib(o.type==='prism'?[15,30,15]:8);
+    if(R.combo%5===0){floatText(cx(R.px),cy(R.py)-L.cell*.7,'COMBO '+R.combo,th().player,18);Snd.combo();R.pulse=1}
+    if(!noSurge&&m.surge>0&&R.rng2()<m.surge)surge();
+  }else{
+    const pts=Math.round(val*m.echoValue);S.score+=pts;S.stats.echoScore+=pts;
+    const ec=echoCol(S.echoes.indexOf(who));
+    burst(px,py,ec,6);floatText(px,py,'+'+pts,ec,13);Snd.echoPick(o);
+  }
+}
+function surge(){
+  floatText(cx(R.px),cy(R.py)-L.cell,'星爆！',th().player,24);R.flash=1;Snd.surge();vib([20,30,20,30,40]);
+  R.orbs.splice(0).forEach(o=>onPickup(o,'p',true));
+}
+function tryStep(dx,dy){
+  const nx=R.px+dx,ny=R.py+dy;
+  if(nx<0||ny<0||nx>=G||ny>=G)return false;
+  R.px=nx;R.py=ny;R.lastMoveT=R.t;R.events.push({t:Math.round(R.t),x:nx,y:ny});
+  gather(nx,ny,S.mods.magnet,'p');return true;
+}
+function clash(){
+  R.clashCd=R.t+CFG.CLASH_CD;
+  const px=cx(R.px),py=cy(R.py);
+  if(R.shield>0){R.shield--;floatText(px,py-L.cell*.6,'护盾',th().player,18);Snd.shield();return}
+  S.stats.clashes++;R.combo=0;R.shake=1;
+  if(S.mode==='focus'){const loss=Math.min(S.score,CFG.CLASH_PENALTY);S.score-=loss;floatText(px,py-L.cell*.6,'-'+loss,'#ff7e8a',20)}
+  else floatText(px,py-L.cell*.6,'连击中断','#ff9aa5',16);
+  Snd.clash();vib([30,40,30]);
+}
+function update(dt){
+  if(S.phase==='banner'){S.bannerT+=dt;if(S.bannerT>=1500)afterBanner();return}
+  if(S.phase==='ready'){if(R.queue.length||heldDir())setPhase('play');else return}
+  if(S.phase!=='play')return;
+  const m=S.mods;R.t+=dt;
+  if(!R.queue.length){const h=heldDir();if(h)R.queue.push(h)}
+  while(R.queue.length&&R.t-R.lastMoveT>=CFG.MOVE_MS){const d=R.queue.shift();if(tryStep(d[0],d[1]))break}
+  while(R.t>=R.nextSpawn){spawnOrb();R.nextSpawn+=CFG.SPAWN_MS/m.spawnMul}
+  R.orbs=R.orbs.filter(o=>R.t-o.born<o.life);
+  for(const e of S.echoes){
+    while(e.i+1<e.events.length&&e.events[e.i+1].t<=R.t)e.i++;
+    e.x=e.events[e.i].x;e.y=e.events[e.i].y;
+    gather(e.x,e.y,m.echoReach,e);
+  }
+  gather(R.px,R.py,m.magnet,'p');
+  if(R.t>CFG.CLASH_IMMUNE_MS&&R.t>R.clashCd){for(const e of S.echoes){if(e.x===R.px&&e.y===R.py){clash();break}}}
+  if(R.combo>0&&R.t-R.lastPickT>m.comboWindow)R.combo=0;
+  if(R.t>=R.dur)endRound();
+}
+function endRound(){
+  S.roundScores.push(S.score-R.startScore);
+  const ev=R.events.slice();S.paths.push({events:ev,dur:R.dur});
+  if(S.round<CFG.ROUNDS)S.echoes.push({events:ev,i:0,x:0,y:0,vx:0,vy:0});
+  S.echoes.forEach(e=>{e.i=0;e.x=e.events[0].x;e.y=e.events[0].y;e.vx=e.x;e.vy=e.y});
+  R.orbs=[];R.queue=[];setPhase('banner');S.bannerT=0;Snd.roundEnd();vib([20,40,20]);
+}
+function afterBanner(){
+  if(S.round>=CFG.ROUNDS)return showResult();
+  if(CFG.RELIC_AFTER.includes(S.round))return showRelic();
+  startRound();
 }
 
-// Shader Matrix Switcher Engine Profiles
-function applyWeatherProfile(mode) {
-    if (mode === 'day') {
-        scene.background = new THREE.Color('#9cc2ff');
-        scene.fog = new THREE.FogExp2('#9cc2ff', 0.006);
-        if(globalLight) { globalLight.color.set('#ffffff'); globalLight.intensity = 1.5; }
-        if(sunMesh) { sunMesh.material.color.set('#fffde7'); sunMesh.position.set(60, 65, -350); }
-    } else if (mode === 'night') {
-        scene.background = new THREE.Color('#030511');
-        scene.fog = new THREE.FogExp2('#030511', 0.008);
-        if(globalLight) { globalLight.color.set('#4d66ff'); globalLight.intensity = 0.5; }
-        if(sunMesh) { sunMesh.material.color.set('#90a4ae'); sunMesh.position.set(-50, 45, -300); }
-    } else if (mode === 'sunset') {
-        scene.background = new THREE.Color('#e65100');
-        scene.fog = new THREE.FogExp2('#e65100', 0.007);
-        if(globalLight) { globalLight.color.set('#ffb74d'); globalLight.intensity = 1.4; }
-        if(sunMesh) { sunMesh.material.color.set('#ff3d00'); sunMesh.position.set(40, 25, -320); }
-    }
+/* ================= 遗物选择 ================= */
+function showRelic(){
+  setPhase('relic');
+  const rng=mulberry32(S.seed*17+S.round*101+5);
+  const pool=RELICS.filter(r=>!S.relics.includes(r.id));
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  $('cards').innerHTML=pool.slice(0,3).map(r=>`<button class="card" data-id="${r.id}"><div class="ic">${r.icon}</div><b>${r.name}</b><span>${r.desc}</span></button>`).join('');
+  $('relicHave').textContent=S.relics.length?'已拥有：'+S.relics.map(id=>RELICS.find(r=>r.id===id).icon+RELICS.find(r=>r.id===id).name).join('　'):'';
+  $('relic').classList.remove('hidden');
 }
-
-function buildAdvancedHighway() {
-    const roadGeo = new THREE.PlaneGeometry(18, 2000);
-    // Real PBR styled Asphalt Texture shaders
-    const roadMat = new THREE.MeshStandardMaterial({ color: '#1f2026', roughness: 0.5, metalness: 0.2 });
-    road = new THREE.Mesh(roadGeo, roadMat);
-    road.rotation.x = -Math.PI / 2;
-    road.position.set(0, 0, -900);
-    scene.add(road);
-
-    // Add High Definition Continuous Highway Markings Grid
-    for(let i = 0; i > -2000; i -= 25) {
-        const lineGeo = new THREE.PlaneGeometry(0.35, 9);
-        const lineMat = new THREE.MeshBasicMaterial({ color: '#ffffff', side: THREE.DoubleSide });
-        
-        const markL = new THREE.Mesh(lineGeo, lineMat);
-        markL.rotation.x = -Math.PI / 2;
-        markL.position.set(-3, 0.02, i);
-        
-        const markR = markL.clone();
-        markR.position.x = 3;
-        
-        scene.add(markL, markR);
-        environmentObjects.push(markL, markR);
-    }
-}
-
-// Next-Gen Ultra HD Shell Hypercar Assembly (PBR Metalness Custom Shell)
-function buildHypercarMesh() {
-    playerCar = new THREE.Group();
-
-    const chromeCarbonPaint = new THREE.MeshStandardMaterial({ 
-        color: '#ff003c', metalness: 0.9, roughness: 0.08, clearcoat: 1.0, clearcoatRoughness: 0.02 
-    });
-    const fusedGlass = new THREE.MeshStandardMaterial({ color: '#05070a', roughness: 0.02, metalness: 0.95 });
-    const trimMat = new THREE.MeshStandardMaterial({ color: '#0d0d0f', roughness: 0.65 });
-
-    // Streamlined Low Profile Air Intake Nose
-    const frontGeo = new THREE.CylinderGeometry(0.4, 0.9, 1.7, 24);
-    frontGeo.rotateX(Math.PI / 2); frontGeo.scale(2.1, 0.24, 1);
-    const nose = new THREE.Mesh(frontGeo, chromeCarbonPaint);
-    nose.position.set(0, 0.22, -1.65);
-    playerCar.add(nose);
-
-    // Wide Aero Chassis Monocoque Fuselage
-    const fuselageGeo = new THREE.CylinderGeometry(0.82, 0.98, 3.0, 24);
-    fuselageGeo.rotateX(Math.PI / 2); fuselageGeo.scale(2.15, 0.42, 1);
-    const bodyCell = new THREE.Mesh(fuselageGeo, chromeCarbonPaint);
-    bodyCell.position.set(0, 0.33, 0.35);
-    playerCar.add(bodyCell);
-
-    // Curved Panoramic Carbon Windshield Shield
-    const glassGeo = new THREE.SphereGeometry(0.66, 32, 24, 0, Math.PI * 2, 0, Math.PI / 2);
-    glassGeo.scale(1.2, 0.66, 2.1);
-    const canopy = new THREE.Mesh(glassGeo, fusedGlass);
-    canopy.position.set(0, 0.46, -0.02);
-    playerCar.add(canopy);
-
-    // Racing GT Spoiler Wing
-    const mainSpoiler = new THREE.Mesh(new THREE.BoxGeometry(2.5, 0.03, 0.6), trimMat);
-    mainSpoiler.position.set(0, 0.9, 1.85);
-    playerCar.add(mainSpoiler);
-
-    const wingPillarL = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.42, 0.12), trimMat);
-    wingPillarL.position.set(-1.0, 0.69, 1.75); wingPillarL.rotation.x = 0.24;
-    playerCar.add(wingPillarL);
-    const wingPillarR = wingPillarL.clone(); wingPillarR.position.x = 1.0;
-    playerCar.add(wingPillarR);
-
-    // Xenon Hyper Laser Beams
-    const headlightMat = new THREE.MeshBasicMaterial({ color: '#00f6ff' });
-    const beamL = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.04, 0.12), headlightMat);
-    beamL.position.set(-0.82, 0.28, -2.32); beamL.rotation.y = 0.16;
-    playerCar.add(beamL);
-    const beamR = beamL.clone(); beamR.position.x = 0.82; beamR.rotation.y = -0.16;
-    playerCar.add(beamR);
-
-    // Heavy Alloy Chrome Wheel Assemblies
-    const tireMat = new THREE.MeshStandardMaterial({ color: '#0e0f12', roughness: 0.85 });
-    const chromeRim = new THREE.MeshStandardMaterial({ color: '#f0f0f0', metalness: 0.98, roughness: 0.05 });
-    const wheelGeo = new THREE.CylinderGeometry(0.44, 0.44, 0.46, 32);
-    const rimGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.48, 16);
-
-    const axisPointers = [[-1.08, 0.44, -1.05], [1.08, 0.44, -1.05], [-1.08, 0.44, 1.25], [1.08, 0.44, 1.25]];
-    axisPointers.forEach(pos => {
-        const tire = new THREE.Mesh(wheelGeo, tireMat); tire.rotation.z = Math.PI / 2;
-        const rim = new THREE.Mesh(rimGeo, chromeRim); rim.rotation.z = Math.PI / 2;
-        const subWheel = new THREE.Group();
-        subWheel.add(tire, rim);
-        subWheel.position.set(pos[0], pos[1], pos[2]);
-        playerCar.add(subWheel);
-    });
-
-    // Setup 3D Nitro Exhaust Pipe emitters
-    const pipeGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 16);
-    pipeGeo.rotateX(Math.PI/2);
-    const pipeL = new THREE.Mesh(pipeGeo, trimMat);
-    pipeL.position.set(-0.4, 0.2, 1.8);
-    const pipeR = pipeL.clone(); pipeR.position.x = 0.4;
-    playerCar.add(pipeL, pipeR);
-
-    scene.add(playerCar);
-}
-
-// Intelligent變道社会车辆 (Traffic Vehicles with Random Lane Actions)
-function buildTrafficSystem() {
-    const palette = ['#0066ff', '#ffa500', '#7b1fa2', '#ffffff', '#37474f'];
-    
-    for (let i = 0; i < 6; i++) {
-        const npcVehicle = new THREE.Group();
-        const paintMat = new THREE.MeshStandardMaterial({ 
-            color: palette[i % palette.length], metalness: 0.7, roughness: 0.2, clearcoat: 0.5 
-        });
-        const cabinMat = new THREE.MeshStandardMaterial({ color: '#0a0a0f', roughness: 0.1 });
-
-        const mainGeo = new THREE.CylinderGeometry(0.76, 0.92, 3.5, 16);
-        mainGeo.rotateX(Math.PI/2); mainGeo.scale(1.88, 0.44, 1);
-        const bMesh = new THREE.Mesh(mainGeo, paintMat);
-        bMesh.position.y = 0.38;
-        npcVehicle.add(bMesh);
-
-        const cabMesh = new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.48, 1.8), cabinMat);
-        cabMesh.position.set(0, 0.72, 0);
-        npcVehicle.add(cabMesh);
-
-        let initialLaneX = (i % 2 === 0) ? -4.5 : 4.5;
-        npcVehicle.position.set(initialLaneX, 0, -120 - (i * 80));
-        scene.add(npcVehicle);
-        
-        enemies.push({
-            mesh: npcVehicle,
-            speed: 0.6 + Math.random() * 0.4,
-            laneX: initialLaneX,
-            laneChangeTimer: Math.random() * 200,
-            targetLaneX: initialLaneX
-        });
-    }
-}
-
-// Endless Procedural Architecture Scenery Engine
-function buildProceduralCityscape() {
-    const towerColors = ['#b0bec5', '#90a4ae', '#78909c', '#607d8b', '#cfd8dc'];
-    
-    for (let i = 0; i > -2000; i -= 50) {
-        // Left Architecture Hub
-        const hL = 35 + Math.random() * 40;
-        const wL = 14 + Math.random() * 8;
-        const matL = new THREE.MeshStandardMaterial({ color: towerColors[Math.floor(Math.random() * towerColors.length)], roughness: 0.4, metalness: 0.35 });
-        const bldL = new THREE.Mesh(new THREE.BoxGeometry(wL, hL, 18), matL);
-        bldL.position.set(-22 - wL/2, hL/2, i);
-        scene.add(bldL);
-        environmentObjects.push(bldL);
-
-        // Right Architecture Hub
-        const hR = 35 + Math.random() * 40;
-        const wR = 14 + Math.random() * 8;
-        const matR = new THREE.MeshStandardMaterial({ color: towerColors[Math.floor(Math.random() * towerColors.length)], roughness: 0.4, metalness: 0.35 });
-        const bldR = new THREE.Mesh(new THREE.BoxGeometry(wR, hR, 18), matR);
-        bldR.position.set(22 + wR/2, hR/2, i + 25);
-        scene.add(bldR);
-        environmentObjects.push(bldR);
-
-        // Highway High Density Pines
-        const forestMat = new THREE.MeshStandardMaterial({ color: '#1b5e20', roughness: 0.85 });
-        const crownGeo = new THREE.SphereGeometry(2.4, 16, 16);
-        
-        const treeL = new THREE.Mesh(crownGeo, forestMat);
-        treeL.position.set(-12, 2.4, i + 20);
-        const treeR = treeL.clone();
-        treeR.position.x = 12;
-        
-        scene.add(treeL, treeR);
-        environmentObjects.push(treeL, treeR);
-    }
-}
-
-// Manage 3D NOS Particles Fire Emitters
-function executeNitroFX() {
-    if (keys.nos && keys.up && speed > 0.5) {
-        // Create 3D Flame Particles
-        const particleGeo = new THREE.SphereGeometry(0.08, 8, 8);
-        const particleMat = new THREE.MeshBasicMaterial({ color: '#00f0ff', transparent: true, opacity: 0.8 });
-        
-        for (let k = 0; k < 2; k++) {
-            const p = new THREE.Mesh(particleGeo, particleMat);
-            // Spawn right behind exhaust pipes
-            let sideX = k === 0 ? -0.4 : 0.4;
-            p.position.set(playerCar.position.x + sideX, 0.2, playerCar.position.z + 1.8);
-            scene.add(p);
-            nitroParticles.push({
-                mesh: p,
-                vx: (Math.random() - 0.5) * 0.05,
-                vy: (Math.random() - 0.5) * 0.05,
-                vz: 0.8 + Math.random() * 0.5, // Fly backwards fast
-                life: 1.0
-            });
-        }
-        // Advance Camera Field of View for high speed warp stretch perception
-        if (camera.fov < 68) { camera.fov += 0.8; camera.updateProjectionMatrix(); }
-    } else {
-        // Return Field of View to static normal values seamlessly
-        if (camera.fov > 54) { camera.fov -= 1.0; camera.updateProjectionMatrix(); }
-    }
-
-    // Process Active Particles Matrix Lifecycle Loops
-    for (let i = nitroParticles.length - 1; i >= 0; i--) {
-        const p = nitroParticles[i];
-        p.mesh.position.x += p.vx;
-        p.mesh.position.y += p.vy;
-        p.mesh.position.z += p.vz;
-        p.life -= 0.05;
-        p.mesh.scale.setScalar(p.life);
-        
-        if (p.life <= 0) {
-            scene.remove(p.mesh);
-            nitroParticles.splice(i, 1);
-        }
-    }
-}
-
-function setupControlFramework() {
-    modeSwitcher.addEventListener('click', () => {
-        if (isGameOver) return;
-        if (controlMode === 'buttons') {
-            controlMode = 'wheel';
-            buttonControls.style.display = 'none';
-            steeringWheel.style.display = 'block';
-            keys.left = false; keys.right = false;
-        } else {
-            controlMode = 'buttons';
-            buttonControls.style.display = 'flex';
-            steeringWheel.style.display = 'none';
-            wheelCurrentRotation = 0;
-            steeringWheel.style.transform = `rotate(0deg)`;
-        }
-    });
-
-    weatherBtn.addEventListener('click', () => {
-        if (weatherMode === 'day') { weatherMode = 'sunset'; weatherBtn.innerText = "TIME: SUNSET"; }
-        else if (weatherMode === 'sunset') { weatherMode = 'night'; weatherBtn.innerText = "TIME: MIDNIGHT"; }
-        else { weatherMode = 'day'; weatherBtn.innerText = "TIME: DAYTIME"; }
-        applyWeatherProfile(weatherMode);
-    });
-
-    // Advanced Steering Trigonometry Tracking Systems
-    function getTouchAngleRad(e) {
-        const bound = steeringWheel.getBoundingClientRect();
-        const coreX = bound.left + bound.width / 2;
-        const coreY = bound.top + bound.height / 2;
-        const touch = e.touches[0];
-        return Math.atan2(touch.clientY - coreY, touch.clientX - coreX);
-    }
-
-    steeringWheel.addEventListener('touchstart', (e) => {
-        e.preventDefault(); if (isGameOver) return;
-        wheelActive = true;
-        wheelStartAngle = getTouchAngleRad(e) - wheelCurrentRotation;
-    }, { passive: false });
-
-    steeringWheel.addEventListener('touchmove', (e) => {
-        e.preventDefault(); if (!wheelActive || isGameOver) return;
-        let diff = getTouchAngleRad(e) - wheelStartAngle;
-        wheelCurrentRotation = Math.max(-2.2, Math.min(2.2, diff));
-        steeringWheel.style.transform = `rotate(${wheelCurrentRotation * 57.29}deg)`;
-    }, { passive: false });
-
-    const anchorWheel = () => { wheelActive = false; };
-    steeringWheel.addEventListener('touchend', anchorWheel);
-    steeringWheel.addEventListener('touchcancel', anchorWheel);
-
-    // Setup Touch Input Hooks Hooks
-    function linkPedal(id, prop) {
-        const el = document.getElementById(id);
-        el.addEventListener('touchstart', (e) => { e.preventDefault(); if(!isGameOver) keys[prop] = true; }, { passive: false });
-        el.addEventListener('touchend', (e) => { e.preventDefault(); keys[prop] = false; }, { passive: false });
-        el.addEventListener('touchcancel', (e) => { e.preventDefault(); keys[prop] = false; }, { passive: false });
-    }
-    linkPedal('key-left', 'left'); linkPedal('key-right', 'right');
-    linkPedal('key-up', 'up'); linkPedal('key-down', 'down'); linkPedal('key-nos', 'nos');
-
-    restartBtn.addEventListener('click', resetGameplaySession);
-}
-
-function computeCorePhysics() {
-    if (isGameOver) return;
-
-    // Throttle Accel Calculus Engine matrix
-    if (keys.nos && keys.up) {
-        maxSpeed = nitroMaxSpeed; speed += accel * 1.6;
-    } else {
-        maxSpeed = baseMaxSpeed;
-        if (keys.up) speed += accel;
-        else if (keys.down) speed += brk;
-        else speed += decel;
-    }
-    speed = Math.max(0, Math.min(speed, maxSpeed));
-
-    // Resolve Lateral Turn Angles weights matrix
-    let steerWeight = 0;
-    if (controlMode === 'buttons') {
-        if (keys.left) steerWeight = -1;
-        if (keys.right) steerWeight = 1;
-    } else {
-        if (!wheelActive) {
-            wheelCurrentRotation *= 0.82; // Snap Wheel smoothly back to middle bounds
-            steeringWheel.style.transform = `rotate(${wheelCurrentRotation * 57.29}deg)`;
-        }
-        steerWeight = wheelCurrentRotation / 2.2;
-    }
-
-    // Vector Translations With Physical Body Roll and Drag Lean Mockups
-    if (Math.abs(steerWeight) > 0.02 && playerCar.position.x >= -7.6 && playerCar.position.x <= 7.6) {
-        playerCar.position.x += 0.25 * steerWeight * (speed / baseMaxSpeed);
-        playerCar.rotation.y = -0.24 * steerWeight; // Front end wheel yaw angles
-        playerCar.rotation.z = -0.14 * steerWeight; // Rolling sway chassis vectors
-    } else {
-        playerCar.rotation.y *= 0.78; playerCar.rotation.z *= 0.78;
-    }
-    playerCar.position.x = Math.max(-7.6, Math.min(7.6, playerCar.position.x));
-
-    // Handle Infinite Scene Progression Translators
-    if (speed > 0) {
-        score += Math.floor(speed * 20);
-        
-        environmentObjects.forEach(obj => {
-            obj.position.z += speed * 30;
-            if (obj.position.z > 25) obj.position.z -= 1900;
-        });
-
-        // Smart Traffic Navigation & Intelligent Lane Switching
-        enemies.forEach(enemy => {
-            // Intelligent AI Logic: Switch lanes randomly to challenge user
-            enemy.laneChangeTimer--;
-            if (enemy.laneChangeTimer <= 0) {
-                enemy.targetLaneX = Math.random() > 0.5 ? -4.5 : 4.5;
-                enemy.laneChangeTimer = 150 + Math.random() * 200;
-            }
-            // Smoothly move towards target lane
-            enemy.mesh.position.x += (enemy.targetLaneX - enemy.mesh.position.x) * 0.03;
-
-            // Move vehicle down highway
-            enemy.mesh.position.z += (speed * 30) - (enemy.speed * 25);
-            
-            // Core Physics Intersection hit boxes check
-            if (Math.abs(playerCar.position.z - enemy.mesh.position.z) < 3.6 &&
-                Math.abs(playerCar.position.x - enemy.mesh.position.x) < 1.8) {
-                
-                hp -= 34;
-                if (hp < 0) hp = 0;
-                
-                hpBar.style.width = `${hp}%`;
-                if(hp <= 30) hpBar.style.background = '#ff0055';
-                else if(hp <= 60) hpBar.style.background = '#ffcc00';
-
-                // Trigger Screen Damage Flash Overlay View
-                damageFlash.style.opacity = '1';
-                setTimeout(() => { damageFlash.style.opacity = '0'; }, 80);
-
-                // AAA Camera Shake Impact feedback matrix
-                triggerCameraShake();
-
-                if (hp <= 0) {
-                    haltGameSession();
-                    return;
-                }
-
-                speed = 0.12; // Complete bounce dampening effect
-                enemy.mesh.position.z -= 15; 
-            }
-
-            if (enemy.mesh.position.z > 25) {
-                enemy.mesh.position.z = -450 - Math.random() * 250;
-                enemy.mesh.position.x = Math.random() > 0.5 ? -4.5 : 4.5;
-                enemy.targetLaneX = enemy.mesh.position.x;
-            }
-        });
-    }
-
-    // Update Global Dashboard Metrics values
-    speedVal.innerText = Math.floor((speed / baseMaxSpeed) * 305);
-    scoreVal.innerText = score;
-}
-
-// Camera shake effect on crash
-function triggerCameraShake() {
-    let count = 0;
-    const originalY = camera.position.y;
-    const originalX = camera.position.x;
-    
-    const shakeInterval = setInterval(() => {
-        camera.position.x = originalX + (Math.random() - 0.5) * 0.4;
-        camera.position.y = originalY + (Math.random() - 0.5) * 0.4;
-        count++;
-        if (count > 8) {
-            clearInterval(shakeInterval);
-            camera.position.x = originalX;
-            camera.position.y = originalY;
-        }
-    }, 20);
-}
-
-function haltGameSession() {
-    isGameOver = true; speed = 0;
-    finalScore.innerText = score;
-    gameoverScreen.style.with = 'flex';
-    gameoverScreen.style.display = 'flex';
-}
-
-function resetGameplaySession() {
-    hp = 100; score = 0; speed = 0;
-    playerCar.position.set(0, 0, 0);
-    hpBar.style.width = '100%';
-    hpBar.style.background = 'linear-gradient(90deg, #00ff66, #00ffcc)';
-    
-    enemies.forEach((enemy, index) => {
-        let lx = (index % 2 === 0) ? -4.5 : 4.5;
-        enemy.mesh.position.set(lx, 0, -120 - (index * 80));
-        enemy.targetLaneX = lx;
-    });
-
-    gameoverScreen.style.display = 'none';
-    isGameOver = false;
-}
-
-function animationPipelineLoop() {
-    requestAnimationFrame(animationPipelineLoop);
-    computeCorePhysics();
-    executeNitroFX();
-    renderer.render(scene, camera);
-}
-
-function onWindowResize() {
-    camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix();
-    renderer.setSize(window.innerWidth, window.innerHeight);
-}
-
-// Global Keyboard mapping configuration adapters
-window.addEventListener('keydown', (e) => {
-    if (isGameOver) return;
-    if (e.key === 'ArrowUp' || e.key === 'w') keys.up = true;
-    if (e.key === 'ArrowDown' || e.key === 's') keys.down = true;
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
-    if (e.key === 'Shift') keys.nos = true;
-});
-window.addEventListener('keyup', (e) => {
-    if (e.key === 'ArrowUp' || e.key === 'w') keys.up = false;
-    if (e.key === 'ArrowDown' || e.key === 's') keys.down = false;
-    if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
-    if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
-    if (e.key === 'Shift') keys.nos = false;
+$('cards').addEventListener('click',e=>{
+  const b=e.target.closest('.card');if(!b)return;
+  S.relics.push(b.dataset.id);S.mods=calcMods();Snd.ui();$('relic').classList.add('hidden');startRound();
 });
 
-// Primary Master Boot Engine Pipeline
-initEngine();
-animationPipelineLoop();
+/* ================= 结算 ================= */
+const gradeOf=s=>CFG.GRADES.find(g=>s>=g[1])[0];
+function updateStreak(){
+  const t=todayStr();const r={used:0,earned:false,halved:false};
+  if(save.lastDay===t)return r;
+  if(!save.lastDay)save.streak=1;
+  else{
+    const gap=dayNum(t)-dayNum(save.lastDay)-1;
+    if(gap<=0)save.streak++;
+    else if(save.freezes>=gap){save.freezes-=gap;r.used=gap;save.streak++}
+    else{save.streak=Math.floor(save.streak/2)+1;r.halved=true}
+  }
+  save.lastDay=t;
+  if(save.streak%7===0&&save.freezes<2){save.freezes++;r.earned=true}
+  return r;
+}
+function showResult(){
+  setPhase('result');
+  const score=S.score,grade=gradeOf(score);
+  const isBest=score>save.best,prevBest=save.best;if(isBest)save.best=score;
+  const st=updateStreak();
+  const gain=20+Math.floor(score/20)+(S.official?50:0)+Math.min(save.streak,7)*5;
+  const before=save.stardust;save.stardust+=gain;const after=save.stardust;save.runs++;
+  if(S.official)save.daily={date:todayStr(),score,grade,rounds:S.roundScores.slice(),mode:S.mode};
+  const unlocked=THEMES.filter(t=>t.at>before&&t.at<=after);
+  persist();
+  $('rGrade').textContent=grade;
+  $('rScore').textContent=score.toLocaleString()+' 分'+(isBest&&prevBest>0?'　🏆新纪录':'');
+  const idx=CFG.GRADES.findIndex(g=>score>=g[1]);
+  if(idx>0){const [ng,nt]=CFG.GRADES[idx-1];const gap=nt-score;$('rNear').innerHTML=`距离 <b>${ng}</b> 评级只差 <b>${gap.toLocaleString()}</b> 分（${Math.round(gap/nt*100)}%）`}
+  else $('rNear').textContent='已达最高评级 ✨';
+  const mx=Math.max(...S.roundScores,1);
+  $('rRounds').innerHTML=S.roundScores.map(s=>`<div class="rb"><i style="height:${Math.max(6,s/mx*100*.7)}%"></i>${s}</div>`).join('');
+  const total=Math.max(1,score),echoPct=Math.round(S.stats.echoScore/total*100);
+  let line=`最高连击 ${S.stats.bestCombo} · 棱镜 ×${S.stats.prisms} · 回声贡献 ${echoPct}% · 相撞 ${S.stats.clashes} 次<br>🔥 连续 ${save.streak} 天　🛌 休眠 ×${save.freezes}`;
+  if(st.used)line+=`<br>昨天没玩，已自动使用 ${st.used} 次休眠保护连续天数`;
+  if(st.earned)line+='<br>🎁 连续 7 天，获得 1 次休眠！';
+  if(st.halved)line+='<br>连续天数减半（不会清零，明天继续！）';
+  $('rStats').innerHTML=line;
+  let prev=THEMES[0],next=null;for(const t of THEMES){if(t.at<=after)prev=t;else{next=t;break}}
+  let hook=next?`新主题「${next.name}」已点亮 <b>${Math.round((after-prev.at)/(next.at-prev.at)*100)}%</b>（+${gain} 星尘）`:`主题已全部收集（+${gain} 星尘）`;
+  if(unlocked.length){hook=`🎉 解锁主题：${unlocked.map(t=>t.name).join('、')}　`+hook;Snd.unlock()}
+  if(!isBest&&prevBest>0)hook+=`<br>距离个人最佳还差 ${(prevBest-score).toLocaleString()} 分`;
+  $('rHook').innerHTML=hook;
+  S.lastGrade=grade;
+  $('result').classList.remove('hidden');playArt();
+}
+let artRAF=0;
+function playArt(){
+  const c=$('art'),x=c.getContext('2d');c.width=560;c.height=560;
+  const cols=[th().player,...th().echo],pad=24,cell=(280-pad*2)/G,t0=performance.now();
+  cancelAnimationFrame(artRAF);
+  (function step(now){
+    const p=Math.min(1,(now-t0)/3200);
+    x.setTransform(2,0,0,2,0,0);x.fillStyle='#070b16';x.fillRect(0,0,280,280);
+    x.fillStyle='rgba(255,255,255,.07)';
+    for(let i=0;i<G;i++)for(let j=0;j<G;j++){x.beginPath();x.arc(pad+(i+.5)*cell,pad+(j+.5)*cell,1.6,0,7);x.fill()}
+    S.paths.forEach((pa,i)=>{
+      const lp=Math.max(0,Math.min(1,(p-i*.15)/.4));if(lp<=0)return;
+      const n=Math.max(2,Math.floor(pa.events.length*lp)),off=(i-2)*2.2;
+      const pts=pa.events.slice(0,n).map(e=>({x:pad+(e.x+.5)*cell+off,y:pad+(e.y+.5)*cell+off}));
+      x.globalCompositeOperation='lighter';
+      strokePath(x,pts,cols[i%cols.length],.22,7);strokePath(x,pts,cols[i%cols.length],.9,2);
+      x.globalCompositeOperation='source-over';
+    });
+    if(p<1&&S.phase==='result')artRAF=requestAnimationFrame(step);
+  })(t0);
+}
+function shareText(){
+  const tiers=['⬜','🟦','🟩','🟨','🟪'],unit=CFG.GRADES[0][1]/CFG.ROUNDS;
+  const line=S.roundScores.map(r=>{const q=r/unit;return tiers[q<.4?0:q<.7?1:q<1?2:q<1.4?3:4]}).join('');
+  return `回声 ECHO ${S.daily?todayStr()+' 每日挑战':'自由模式'}\n评级 ${S.lastGrade} · ${S.score.toLocaleString()} 分\n${line}\n最高连击 ${S.stats.bestCombo}${save.streak>1?' · 🔥'+save.streak+'天':''}`;
+}
+$('btnShare').onclick=()=>{
+  const t=shareText();
+  if(navigator.share){navigator.share({text:t}).catch(()=>{})}
+  else if(navigator.clipboard){navigator.clipboard.writeText(t).then(()=>toast('已复制，去粘贴分享吧'))}
+  else toast('当前浏览器不支持分享');
+};
+$('btnSaveArt').onclick=()=>{$('art').toBlob(b=>{const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='echo-art.png';a.click()})};
+$('btnAgain').onclick=()=>startRun(S.daily);
+$('btnHome').onclick=toMenu;
+
+/* ================= 菜单 ================= */
+function renderMenu(){
+  const t=todayStr(),d=save.daily;
+  $('btnDaily').innerHTML=d&&d.date===t?`📅 今日挑战<small>已完成 ${d.grade} · ${d.score.toLocaleString()}（再玩为练习）</small>`:`📅 今日挑战<small>${t} · 同一天同一张地图</small>`;
+  $('streakLine').textContent=save.lastDay?`🔥 连续 ${save.streak} 天　🛌 休眠 ×${save.freezes}　🏆 最佳 ${save.best.toLocaleString()}`:'今天开始你的第一天';
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.classList.toggle('on',b.dataset.mode===save.mode));
+  $('themes').innerHTML=THEMES.map((t,i)=>{
+    const ok=save.stardust>=t.at;
+    return `<div class="chip ${ok?'':'lock'} ${i===save.theme?'on':''}" data-i="${i}" title="${t.name}${ok?'':'（需 '+t.at+' 星尘）'}" style="background:linear-gradient(135deg,${t.player},${t.echo[0]})"></div>`}).join('');
+  document.documentElement.style.setProperty('--c',th().player);
+  let prev=THEMES[0],next=null;for(const t of THEMES){if(t.at<=save.stardust)prev=t;else{next=t;break}}
+  $('dustBar').style.width=(next?(save.stardust-prev.at)/(next.at-prev.at)*100:100)+'%';
+  $('dustText').textContent=next?`星尘 ${save.stardust} / ${next.at}　下一个主题：${next.name}`:`星尘 ${save.stardust}　主题全部解锁`;
+  $('btnSnd').textContent=save.sound?'🔊 声音开':'🔇 声音关';
+  $('btnVib').textContent=save.haptic?'📳 震动开':'📴 震动关';
+}
+$('btnDaily').onclick=()=>startRun(true);
+$('btnFree').onclick=()=>startRun(false);
+$('modeSeg').onclick=e=>{const b=e.target.closest('button');if(!b)return;save.mode=b.dataset.mode;persist();renderMenu()};
+$('themes').onclick=e=>{const c=e.target.closest('.chip');if(!c||c.classList.contains('lock'))return;save.theme=+c.dataset.i;persist();renderMenu()};
+$('btnHow').onclick=()=>$('how').classList.remove('hidden');
+$('btnHowClose').onclick=()=>$('how').classList.add('hidden');
+$('btnSnd').onclick=()=>{Snd.init();save.sound=!save.sound;Snd.setOn(save.sound);persist();renderMenu()};
+$('btnVib').onclick=()=>{save.haptic=!save.haptic;persist();renderMenu();vib(30)};
+
+/* ================= 输入 ================= */
+const DIRS={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],w:[0,-1],s:[0,1],a:[-1,0],d:[1,0]};
+const held=[];
+const heldDir=()=>held.length?DIRS[held[held.length-1]]:null;
+function pushMove(d){if(!R||S.paused||!(S.phase==='ready'||S.phase==='play'))return;if(R.queue.length<2)R.queue.push(d)}
+addEventListener('keydown',e=>{
+  const k=e.key.length===1?e.key.toLowerCase():e.key;
+  if(DIRS[k]){e.preventDefault();Snd.init();if(!held.includes(k)){held.push(k);pushMove(DIRS[k])}return}
+  if(k==='Escape'||k==='p')togglePause();
+});
+addEventListener('keyup',e=>{const k=e.key.length===1?e.key.toLowerCase():e.key;const i=held.indexOf(k);if(i>=0)held.splice(i,1)});
+addEventListener('blur',()=>{held.length=0});
+let ptr=null;
+cv.addEventListener('pointerdown',e=>{Snd.init();ptr={x:e.clientX,y:e.clientY};try{cv.setPointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointermove',e=>{
+  if(!ptr)return;
+  const dx=e.clientX-ptr.x,dy=e.clientY-ptr.y,thr=Math.max(18,L.cell*.4);
+  if(Math.max(Math.abs(dx),Math.abs(dy))>=thr){
+    pushMove(Math.abs(dx)>Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)]);
+    ptr.x=e.clientX;ptr.y=e.clientY;
+  }
+});
+['pointerup','pointercancel'].forEach(ev=>cv.addEventListener(ev,()=>{ptr=null}));
+function togglePause(){
+  if(!S.paused&&S.phase!=='play'&&S.phase!=='ready')return;
+  S.paused=!S.paused;$('pause').classList.toggle('hidden',!S.paused);
+}
+$('btnPause').onclick=togglePause;
+$('btnResume').onclick=togglePause;
+$('btnQuit').onclick=toMenu;
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&S.phase==='play'&&!S.paused)togglePause()});
+
+/* ================= 特效 ================= */
+function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.283,sp=.04+Math.random()*.14;R.parts.push({x,y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp,t:0,life:450+Math.random()*500,s:2+Math.random()*2.5,col})}}
+function floatText(x,y,text,col,size){R.floats.push({x,y,text,col,size:size||16,t:0,life:900})}
+
+/* ================= 渲染 ================= */
+function render(dt){
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+  S.clock+=dt;
+  const target=R&&S.phase==='play'?Math.min(1,R.combo/25):0;
+  S.bgGlow+=(target-S.bgGlow)*(1-Math.exp(-dt/400));
+  ctx.fillStyle='#060a14';ctx.fillRect(0,0,W,H);
+  const gr=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,Math.max(W,H)*.7);
+  gr.addColorStop(0,rgba(th().player,.06+.16*S.bgGlow));gr.addColorStop(1,'rgba(6,10,20,0)');
+  ctx.fillStyle=gr;ctx.fillRect(0,0,W,H);
+  for(const s of STARS){s.y-=s.v*dt;if(s.y<0)s.y=1;ctx.fillStyle=`rgba(255,255,255,${s.a})`;ctx.fillRect(s.x*W,s.y*H,s.r,s.r)}
+  if(!R||!['ready','play','banner','relic'].includes(S.phase))return;
+
+  const k=1-Math.exp(-dt/50);
+  ctx.save();
+  if(R.shake>0){const s=R.shake*7;ctx.translate((Math.random()-.5)*s,(Math.random()-.5)*s);R.shake=Math.max(0,R.shake-dt/300)}
+  // 棋盘
+  const c=L.cell;
+  for(let y=0;y<G;y++)for(let x=0;x<G;x++){rr(L.bx+x*c+3,L.by+y*c+3,c-6,c-6,c*.2);ctx.fillStyle='rgba(255,255,255,.035)';ctx.fill()}
+  R.pulse=Math.max(0,R.pulse-dt/400);
+  rr(L.bx-2,L.by-2,L.size+4,L.size+4,c*.25);ctx.strokeStyle=rgba(th().player,.08+.3*R.pulse+.15*S.bgGlow);ctx.lineWidth=2;ctx.stroke();
+  // 光粒
+  for(const o of R.orbs){
+    const age=R.t-o.born,left=o.life-age;
+    let a=1;if(left<1500)a=.35+.65*(Math.sin(age/70)*.5+.5);
+    const sc=Math.min(1,age/180),r=c*(.16+.02*Math.sin(age/200+o.x))*(1-Math.pow(1-sc,3));
+    const col=orbColor(o.type,S.clock);
+    glow(ctx,cx(o.x),cy(o.y),r*(o.type==='normal'?1:1.25),col,a*(o.type==='normal'?.85:1));
+    if(o.type==='prism'){ctx.strokeStyle=rgba(col,.5*a);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(cx(o.x),cy(o.y),r*2+Math.sin(S.clock/150)*2,0,7);ctx.stroke()}
+  }
+  // 回声
+  const ne=S.phase==='banner'&&S.round<CFG.ROUNDS?S.echoes.length-1:S.echoes.length;
+  for(let i=0;i<ne;i++){
+    const e=S.echoes[i],col=echoCol(i),pts=e.events.map(ev=>({x:cx(ev.x),y:cy(ev.y)})),w=Math.max(2,c*.07);
+    strokePath(ctx,pts,col,.12,w);
+    if(S.phase==='play')strokePath(ctx,pts.slice(0,e.i+1),col,.3,w);
+    e.vx+=(e.x-e.vx)*k;e.vy+=(e.y-e.vy)*k;
+    glow(ctx,cx(e.vx),cy(e.vy),c*.15,col,.9);
+  }
+  // 回合结束的路径动画
+  if(S.phase==='banner'){
+    const pa=S.paths[S.paths.length-1],p=Math.min(1,S.bannerT/1100),tc=p*pa.dur;
+    let n=0;while(n+1<pa.events.length&&pa.events[n+1].t<=tc)n++;
+    const col=S.round<CFG.ROUNDS?echoCol(S.echoes.length-1):th().player;
+    const pts=pa.events.slice(0,n+1).map(ev=>({x:cx(ev.x),y:cy(ev.y)}));
+    strokePath(ctx,pts,col,.85,Math.max(3,c*.09));
+    const h=pts[pts.length-1];glow(ctx,h.x,h.y,c*.17,col,1);
+  }
+  // 玩家
+  R.vx+=(R.px-R.vx)*k;R.vy+=(R.py-R.vy)*k;
+  const X=cx(R.vx),Y=cy(R.vy);
+  if(S.phase!=='banner'){
+    R.trail.push({x:X,y:Y});if(R.trail.length>16)R.trail.shift();
+    R.trail.forEach((p,i)=>{const f=i/R.trail.length;glow(ctx,p.x,p.y,c*.08*f+1,th().player,.25*f)});
+    glow(ctx,X,Y,c*.2,th().player,1);
+    ctx.fillStyle='#fff';ctx.beginPath();ctx.arc(X,Y,c*.09,0,7);ctx.fill();
+    if(R.combo>=5){ctx.strokeStyle=rgba(th().player,.5);ctx.lineWidth=2;ctx.beginPath();ctx.arc(X,Y,c*(.34+.03*Math.sin(S.clock/120)),0,7);ctx.stroke()}
+  }
+  // 粒子与飘字
+  for(let i=R.parts.length-1;i>=0;i--){
+    const p=R.parts[i];p.t+=dt;if(p.t>=p.life){R.parts.splice(i,1);continue}
+    p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=.00035*dt;const a=1-p.t/p.life;glow(ctx,p.x,p.y,p.s*a+.5,p.col,a*.9);
+  }
+  ctx.textAlign='center';
+  for(let i=R.floats.length-1;i>=0;i--){
+    const f=R.floats[i];f.t+=dt;if(f.t>=f.life){R.floats.splice(i,1);continue}
+    ctx.font=`600 ${f.size}px system-ui,sans-serif`;ctx.fillStyle=rgba(f.col.length===7?f.col:'#ffffff',1-f.t/f.life);ctx.fillText(f.text,f.x,f.y-f.t*.04);
+  }
+  ctx.restore();
+  if(R.flash>0){ctx.fillStyle=`rgba(255,255,255,${R.flash*.25})`;ctx.fillRect(0,0,W,H);R.flash=Math.max(0,R.flash-dt/500)}
+  drawHUD(dt);
+}
+function drawHUD(dt){
+  const hudTop=L.by-90;
+  S.dispScore+=(S.score-S.dispScore)*(1-Math.exp(-dt/100));
+  ctx.textAlign='center';ctx.fillStyle='#fff';ctx.font='600 36px system-ui,sans-serif';
+  ctx.fillText(Math.round(S.dispScore).toLocaleString(),W/2,hudTop+34);
+  for(let i=0;i<CFG.ROUNDS;i++){
+    const x=W/2+(i-2)*18,y=hudTop+56;ctx.beginPath();ctx.arc(x,y,4,0,7);
+    if(i<S.round-1||(i===S.round-1&&S.phase==='banner')){ctx.fillStyle=th().player;ctx.fill()}
+    else if(i===S.round-1){ctx.strokeStyle=th().player;ctx.lineWidth=2;ctx.stroke()}
+    else{ctx.fillStyle='rgba(255,255,255,.2)';ctx.fill()}
+  }
+  const ratio=Math.max(0,1-R.t/R.dur);
+  rr(L.bx,L.by-16,L.size,4,2);ctx.fillStyle='rgba(255,255,255,.1)';ctx.fill();
+  if(ratio>0){rr(L.bx,L.by-16,L.size*ratio,4,2);ctx.fillStyle=th().player;ctx.fill()}
+  const by=L.by+L.size;
+  if(S.phase==='play'&&R.combo>=2){
+    ctx.font='600 20px system-ui,sans-serif';ctx.fillStyle=th().player;
+    ctx.fillText(`连击 ${R.combo}　×${multOf(R.combo).toFixed(1)}`,W/2,by+34);
+    const cr=Math.max(0,1-(R.t-R.lastPickT)/S.mods.comboWindow);
+    rr(W/2-60,by+44,120*cr,3,1.5);ctx.fillStyle=rgba(th().player,.7);ctx.fill();
+  }
+  if(S.relics.length){ctx.font='20px system-ui,sans-serif';ctx.fillStyle='#fff';ctx.fillText(S.relics.map(id=>RELICS.find(r=>r.id===id).icon).join(' '),W/2,by+78)}
+  ctx.font='12px system-ui,sans-serif';ctx.fillStyle='rgba(255,255,255,.4)';
+  ctx.fillText((S.mode==='chill'?'🌙 放松':'⚡ 挑战')+' · 回合 '+S.round+'/'+CFG.ROUNDS+(S.echoes.length?' · 回声 ×'+(S.phase==='banner'?S.echoes.length:S.echoes.length):''),W/2,hudTop+78);
+  if(S.phase==='ready'){
+    const a=.55+.35*Math.sin(S.clock/300);
+    ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.font='300 20px system-ui,sans-serif';
+    ctx.fillText(`第 ${S.round} 回合`,W/2,L.by+L.size/2-14);
+    ctx.font='300 15px system-ui,sans-serif';ctx.fillText('滑动 / 方向键 开始',W/2,L.by+L.size/2+14);
+  }
+  if(S.phase==='banner'){
+    const a=Math.min(1,S.bannerT/200)*Math.min(1,(1500-S.bannerT)/300);
+    ctx.fillStyle=`rgba(255,255,255,${a})`;ctx.font='300 26px system-ui,sans-serif';
+    ctx.fillText(S.round<CFG.ROUNDS?`回声 #${S.round} 诞生`:'演奏结束',W/2,L.by+L.size+34);
+  }
+}
+/* ================= 主循环 ================= */
+let last=performance.now();
+function frame(now){
+  const dt=Math.min(50,now-last);last=now;
+  if(!S.paused)update(dt);
+  render(S.paused?0:dt);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+toMenu();
+if(!save.seen){save.seen=true;persist();$('how').classList.remove('hidden')}
+})();
 </script>
 </body>
 </html>
